@@ -5,6 +5,7 @@ use near_sdk::{env, log, near_bindgen, AccountId, Balance};
 
 near_sdk::setup_alloc!();
 
+
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Contract {
@@ -13,59 +14,20 @@ pub struct Contract {
     top_accounts: UnorderedMap<AccountId, Balance>,
 }
 
+
 impl Default for Contract {
     fn default() -> Self {
         Self {
             account_list: UnorderedMap::new(b"a".to_vec()),
-            pool: 100,
+            pool: 20,
             top_accounts: UnorderedMap::new(b"t".to_vec()),
         }
     }
 }
 
+
 #[near_bindgen]
 impl Contract {
-
-    // return top 3 account with highest tx volume. 
-    pub fn get_top(&self) -> (String, String, String) {
-        let mut iter = self.top_accounts.iter();
-        let len = self.top_accounts.len();
-        // "default" means that position doesn't contain an account (total user < 3).
-        let acc1 = String::from("default");
-        let acc2 = String::from("default");
-        let acc3 = String::from("default");
-        let mut tup: (String, String, String) = (acc1, acc2, acc3);
-        for i in 0..len {
-            let next = iter.next().unwrap();
-            if i == 0 {
-                tup.0 = next.0;
-            } else if i == 1 {
-                tup.1 = next.0;
-            } else if i == 2 {
-                tup.2 = next.0;
-            }
-        }
-        tup
-    }
-
-    // (helper function) return the account with lowest transaction volume in the top 3 accounts with highest transaction volume.
-    pub fn minacc(&self) -> (AccountId, Balance) {
-        let len = self.top_accounts.len();
-        let mut iter = self.top_accounts.iter();
-        let mut min: u128 = u128::MAX;
-        let mut min_acc = String::from("default");
-        for i in 0..len {
-            let acc = iter.next().unwrap();
-            if acc.1 < min {
-                min_acc = acc.0;
-                min = acc.1;
-            }
-        }
-        log!("min acc: {}", min_acc);
-        log!("min: {}", min);
-        (min_acc, min)
-    }
-
     // update account_list and top_accounts (top 3 accounts with highest transaction volume)
     pub fn update_list(&mut self, acc: String, amount: u128) {
         if self.account_list.get(&acc).is_some() {
@@ -106,9 +68,47 @@ impl Contract {
                 }
             }
         }
-        let minacc = Contract::minacc(&self);
-        log!("minacc : {:?}", minacc);
     }
+
+
+    // return top 3 account with highest tx volume. 
+    pub fn get_top(&self) -> (String, String, String) {
+        let mut iter = self.top_accounts.iter();
+        let len = self.top_accounts.len();
+        // "default" means that position doesn't contain an account (total user < 3).
+        let acc1 = String::from("default");
+        let acc2 = String::from("default");
+        let acc3 = String::from("default");
+        let mut tup: (String, String, String) = (acc1, acc2, acc3);
+        for i in 0..len {
+            let next = iter.next().unwrap();
+            if i == 0 {
+                tup.0 = next.0;
+            } else if i == 1 {
+                tup.1 = next.0;
+            } else if i == 2 {
+                tup.2 = next.0;
+            }
+        }
+        tup
+    }
+
+    // (helper function) return the account with lowest transaction volume in the top 3 accounts with highest transaction volume.
+    pub fn minacc(&self) -> (AccountId, Balance) {
+        let len = self.top_accounts.len();
+        let mut iter = self.top_accounts.iter();
+        let mut min: u128 = u128::MAX;
+        let mut min_acc = String::from("default");
+        for i in 0..len {
+            let acc = iter.next().unwrap();
+            if acc.1 < min {
+                min_acc = acc.0;
+                min = acc.1;
+            }
+        }
+        (min_acc, min)
+    }
+
 
     // get the total tx volume of an account
     pub fn get_vol(&self, acc: String) -> Option<u128> {
@@ -129,13 +129,15 @@ impl Contract {
 
     // set the prize pool to 100 NEAR - default.
     pub fn set_pool_to_default(&mut self) {
-        self.pool = 100;
+        self.pool = 20;
     }
 
     pub fn get_pool(&self) -> u32 {
         return self.pool;
     }
 
+
+    // calculate how many NEAR an account will receive for the top 3.
     pub fn calculate_reward(&self) -> ((AccountId, Balance), (AccountId, Balance), (AccountId, Balance)) {
         let mut total: u128= 0;
         let pool = u128::from(self.pool);
@@ -174,8 +176,7 @@ impl Contract {
             reward3 = (bal.checked_mul(pool)).unwrap().checked_div(total).unwrap();
         }
 
-        // log!("{:?}", ((&acc1, reward1), (&acc2, reward2), (&acc3, reward3)));
-
+        // logs to retreive data later in the API call's response (JSON).
         log!("{}", &acc1);
         log!("{}", reward1);
         log!("{}", &acc2);
@@ -184,7 +185,6 @@ impl Contract {
         log!("{}", reward3);
 
         return ((acc1, reward1), (acc2, reward2), (acc3, reward3));
-
     }
 
     // clear all account_list and top_accounts
@@ -192,6 +192,5 @@ impl Contract {
         self.account_list.clear();
         self.top_accounts.clear();
     }
-
 }
 
