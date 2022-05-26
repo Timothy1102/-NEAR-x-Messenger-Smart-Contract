@@ -1,0 +1,22 @@
+{
+    "name": "messenger-near",
+    "description": "messenger x NEAR",
+    "version": "1.0.0",
+    "scripts": {
+        "build": "cargo build --target wasm32-unknown-unknown --release",
+        "build:cpwasm": "mkdir -p out && rm -f ./out/*.wasm && cp target/wasm32-unknown-unknown/release/*.wasm out/ ",
+        "deploy": "npm run build && npm run build:cpwasm && near deploy --accountId=messenger-near.testnet --wasmFile=\"./out/mess_near_contract.wasm\"",
+
+        "start": "npm run deploy && echo The app is starting! && env-cmd -f ./neardev/dev-account.env parcel frontend/index.html --open",
+        "dev": "nodemon --watch contract -e ts --exec \"npm run start\"",
+        "test": "npm run build && npm run test:unit && npm run test:integration",
+        "test:unit": "cd contract && cargo test",
+        "test:integration": "npm run test:integration:ts && npm run test:integration:rs",
+        "test:integration:ts": "ava --verbose",
+        "test:integration:rs": "cd integration-tests/rs && cargo run --example integration-tests"
+    },
+    "devDependencies": {
+    },
+    "dependencies": {
+    }
+}
