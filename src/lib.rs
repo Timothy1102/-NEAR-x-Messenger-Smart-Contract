@@ -19,7 +19,7 @@ impl Default for Contract {
     fn default() -> Self {
         Self {
             account_list: UnorderedMap::new(b"a".to_vec()),
-            pool: 20,
+            pool: 30,
             top_accounts: UnorderedMap::new(b"t".to_vec()),
         }
     }
@@ -127,9 +127,9 @@ impl Contract {
         self.pool = pool;
     }
 
-    // set the prize pool to 100 NEAR - default.
+    // set the prize pool to 30 NEAR - default.
     pub fn set_pool_to_default(&mut self) {
-        self.pool = 20;
+        self.pool = 30;
     }
 
     pub fn get_pool(&self) -> u32 {
@@ -185,6 +185,59 @@ impl Contract {
         log!("{}", reward3);
 
         return ((acc1, reward1), (acc2, reward2), (acc3, reward3));
+    }
+
+
+    // just for logging out top 3
+    pub fn top3(&self) {
+        let mut total: u128= 0;
+        let pool = u128::from(self.pool);
+        let top_acc = Contract::get_top(&self);
+        let acc1 = top_acc.0;
+        let acc2 = top_acc.1;
+        let acc3 = top_acc.2;
+
+        let mut reward1: u128 = 0;
+        let mut reward2: u128 = 0;
+        let mut reward3: u128 = 0;
+
+        println!("Top 3 accounts with highest tx volume: ");
+
+        if self.top_accounts.get(&acc1).is_some() {
+            let bal = self.top_accounts.get(&acc1).unwrap();
+            total = total.checked_add(bal).unwrap();
+
+            log!("{} has {} point(s).", acc1, bal);
+        }
+        if self.top_accounts.get(&acc2).is_some() {
+            let bal = self.top_accounts.get(&acc2).unwrap();
+            total = total.checked_add(bal).unwrap();
+            log!("{} has {} point(s).", acc2, bal);
+        }
+        if self.top_accounts.get(&acc3).is_some() {
+            let bal = self.top_accounts.get(&acc3).unwrap();
+            total = total.checked_add(bal).unwrap();
+            log!("{} has {} point(s).", acc3, bal);
+        }
+
+        if self.top_accounts.get(&acc1).is_some() {
+            let bal = self.top_accounts.get(&acc1).unwrap();
+            reward1 = (bal.checked_mul(pool)).unwrap().checked_div(total).unwrap();
+        }
+        if self.top_accounts.get(&acc2).is_some() {
+            let bal = self.top_accounts.get(&acc2).unwrap();
+            reward2 = (bal.checked_mul(pool)).unwrap().checked_div(total).unwrap();
+        }
+        if self.top_accounts.get(&acc3).is_some() {
+            let bal = self.top_accounts.get(&acc3).unwrap();
+            reward3 = (bal.checked_mul(pool)).unwrap().checked_div(total).unwrap();
+        }
+        // logs to retreive data later in the API call's response (JSON).
+        log!("###############################################");
+        log!("current reward pool is: {}", pool);
+        log!("{} will get {} NEAR.", &acc1, reward1);
+        log!("{} will get {} NEAR.", &acc2, reward2);
+        log!("{} will get {} NEAR.", &acc3, reward3);
     }
 
     // clear all account_list and top_accounts
